@@ -9,6 +9,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// type so interface {
+//     roomname() string
+// }
+
+type room struct {
+    name string
+}
+
+// func (r room) roomname() string {
+//     return r.name
+// }
+
+
+
 func main() {
 	router := mux.NewRouter()
 	router.Use(enableCORS)
@@ -20,16 +34,22 @@ func main() {
 		return nil
 	})
 
-	server.OnEvent("/", "msg", func(s socketio.Conn, msg string) {
-		// fmt.Println("New message:", msg)
-		// s.Emit("reply", msg)
-		server.BroadcastToNamespace("", "reply", msg)
+	server.OnEvent("/", "create", func(s socketio.Conn, roomname string) {
+		fmt.Println(roomname)
+		s.Join(roomname)
+		r := room{name: roomname}
+		s.SetContext(r)
+		fmt.Println(s.Context())
 	})
 
-	server.OnEvent("/chat", "msg", func(s socketio.Conn, msg string) string {
-		s.SetContext(msg)
-		return "recv " + msg
+
+	server.OnEvent("/", "msg", func(s socketio.Conn, msg string) {
+		fmt.Println("New message:", s.Rooms())
+		// s.Emit("reply", msg)
+		server.BroadcastToRoom("", "room1", "reply", msg)
 	})
+
+	
 
 	server.OnEvent("/", "bye", func(s socketio.Conn) string {
 		last := s.Context().(string)
